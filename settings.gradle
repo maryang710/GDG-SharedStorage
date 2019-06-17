@@ -1,0 +1,2 @@
+include ':app', ':entity'
+rootProject.name='GDG-SharedStorage'

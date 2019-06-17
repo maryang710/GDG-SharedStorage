@@ -1,0 +1,121 @@
+package com.maryang.storage.ui
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
+import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.GridLayoutManager
+import com.maryang.storage.R
+import com.maryang.storage.base.ActivityContext
+import com.maryang.storage.base.BaseApplication
+import com.maryang.storage.data.repository.PixabayRepository
+import com.maryang.storage.entity.model.PixabayImage
+import io.reactivex.observers.DisposableSingleObserver
+import kotlinx.android.synthetic.main.activity_images.*
+
+
+class ImagesActivity : AppCompatActivity(), ActivityContext {
+
+    private val repository: PixabayRepository by lazy {
+        PixabayRepository()
+    }
+    private val adapter: ImagesAdapter by lazy {
+        ImagesAdapter(this)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_images)
+
+        recyclerView.layoutManager = GridLayoutManager(this, 3)
+        recyclerView.adapter = this.adapter
+
+        refreshLayout.setOnRefreshListener { loadImages() }
+
+        loadImages(true)
+
+        logStorage()
+    }
+
+    @SuppressLint("NewApi")
+    private fun logStorage() {
+        Log.d(BaseApplication.TAG, "internal dir path: ${filesDir.absolutePath}")
+        Log.d(BaseApplication.TAG, "internal cache dir path: ${cacheDir.absolutePath}")
+        Log.d(BaseApplication.TAG, "external dir path: ${getExternalFilesDir(null)?.absolutePath}")
+        Log.d(BaseApplication.TAG, "external cache dir path: ${externalCacheDir?.absolutePath}")
+        Log.d(
+            BaseApplication.TAG,
+            "Environment external dir path: ${Environment.getExternalStorageDirectory().absolutePath}"
+        )
+        Log.d(
+            BaseApplication.TAG,
+            "isExternalStorageLegacy: ${Environment.isExternalStorageLegacy()}"
+        )
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        super.onCreateOptionsMenu(menu)
+        menuInflater.inflate(R.menu.menu_image, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean =
+        when (item.itemId) {
+            R.id.menu_setting -> {
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .apply {
+                        data = Uri.fromParts("package", packageName, null)
+                    }.let {
+                        startActivity(it)
+                    }
+                true
+            }
+            R.id.menu_picker_read -> {
+                startActivity(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                true
+            }
+            R.id.menu_picker_write -> {
+                startActivity(Intent(Intent.ACTION_CREATE_DOCUMENT))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+
+    private fun loadImages(showLoading: Boolean = false) {
+        if (showLoading)
+            showLoading()
+        repository.getImages()
+            .subscribe(object : DisposableSingleObserver<List<PixabayImage>>() {
+                override fun onSuccess(t: List<PixabayImage>) {
+                    refreshLayout.isRefreshing = false
+                    loading.visibility = View.GONE
+                    adapter.items = t
+                }
+
+                override fun onError(e: Throwable) {
+                    e.printStackTrace()
+                }
+            })
+    }
+
+    override fun showLoading() {
+        loading.visibility = View.VISIBLE
+    }
+
+    override fun hideLoading() {
+        loading.visibility = View.GONE
+    }
+
+    override fun getContext() = this
+
+    override fun toast(message: String) {
+        toast(message)
+    }
+}

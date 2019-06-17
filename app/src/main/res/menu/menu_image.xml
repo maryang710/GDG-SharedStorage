@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_setting"
+        android:title="설정"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/menu_picker_read"
+        android:title="Picker Read"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_picker_write"
+        android:title="Picker Write"
+        app:showAsAction="never" />
+</menu>
