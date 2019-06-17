@@ -1,6 +1,7 @@
 package com.maryang.storage.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -11,17 +12,23 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.documentfile.provider.DocumentFile
 import androidx.recyclerview.widget.GridLayoutManager
 import com.maryang.storage.R
 import com.maryang.storage.base.ActivityContext
 import com.maryang.storage.base.BaseApplication
 import com.maryang.storage.data.repository.PixabayRepository
 import com.maryang.storage.entity.model.PixabayImage
+import com.maryang.storage.util.FileUtil
 import io.reactivex.observers.DisposableSingleObserver
 import kotlinx.android.synthetic.main.activity_images.*
 
 
 class ImagesActivity : AppCompatActivity(), ActivityContext {
+
+    companion object {
+        const val REQUEST_CODE_READ = 0
+    }
 
     private val repository: PixabayRepository by lazy {
         PixabayRepository()
@@ -44,20 +51,17 @@ class ImagesActivity : AppCompatActivity(), ActivityContext {
         logStorage()
     }
 
-    @SuppressLint("NewApi")
-    private fun logStorage() {
-        Log.d(BaseApplication.TAG, "internal dir path: ${filesDir.absolutePath}")
-        Log.d(BaseApplication.TAG, "internal cache dir path: ${cacheDir.absolutePath}")
-        Log.d(BaseApplication.TAG, "external dir path: ${getExternalFilesDir(null)?.absolutePath}")
-        Log.d(BaseApplication.TAG, "external cache dir path: ${externalCacheDir?.absolutePath}")
-        Log.d(
-            BaseApplication.TAG,
-            "Environment external dir path: ${Environment.getExternalStorageDirectory().absolutePath}"
-        )
-        Log.d(
-            BaseApplication.TAG,
-            "isExternalStorageLegacy: ${Environment.isExternalStorageLegacy()}"
-        )
+    override fun onActivityResult(requestCode: Int, resultCode: Int, resultIntent: Intent?) {
+        super.onActivityResult(requestCode, resultCode, resultIntent)
+        when (requestCode) {
+            REQUEST_CODE_READ -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    val resultUri: Uri = resultIntent!!.data!!
+                    val pickedFile: DocumentFile = DocumentFile.fromSingleUri(this, resultUri)!!
+                    FileUtil.logDocumentFile(pickedFile)
+                }
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -78,7 +82,12 @@ class ImagesActivity : AppCompatActivity(), ActivityContext {
                 true
             }
             R.id.menu_picker_read -> {
-                startActivity(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                startActivityForResult(
+                    Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                        type = FileUtil.MIME_IMAGE
+                    },
+                    REQUEST_CODE_READ
+                )
                 true
             }
             R.id.menu_picker_write -> {
@@ -117,5 +126,21 @@ class ImagesActivity : AppCompatActivity(), ActivityContext {
 
     override fun toast(message: String) {
         toast(message)
+    }
+
+    @SuppressLint("NewApi")
+    private fun logStorage() {
+        Log.d(BaseApplication.TAG, "internal dir path: ${filesDir.absolutePath}")
+        Log.d(BaseApplication.TAG, "internal cache dir path: ${cacheDir.absolutePath}")
+        Log.d(BaseApplication.TAG, "external dir path: ${getExternalFilesDir(null)?.absolutePath}")
+        Log.d(BaseApplication.TAG, "external cache dir path: ${externalCacheDir?.absolutePath}")
+        Log.d(
+            BaseApplication.TAG,
+            "Environment external dir path: ${Environment.getExternalStorageDirectory().absolutePath}"
+        )
+        Log.d(
+            BaseApplication.TAG,
+            "isExternalStorageLegacy: ${Environment.isExternalStorageLegacy()}"
+        )
     }
 }

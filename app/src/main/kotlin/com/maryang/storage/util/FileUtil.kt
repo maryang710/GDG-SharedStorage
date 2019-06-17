@@ -13,6 +13,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.appcompat.app.AlertDialog
+import androidx.documentfile.provider.DocumentFile
 import com.maryang.storage.base.BaseApplication
 import java.io.File
 import java.io.FileOutputStream
@@ -23,6 +24,7 @@ object FileUtil {
     //    private val PATH_PARENT =
 //        BaseApplication.appContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES)!!.absolutePath
     private val PATH_PARENT = "${Environment.getExternalStorageDirectory().absolutePath}/${BaseApplication.TAG}"
+    const val MIME_IMAGE = "image/*"
     private const val MIME_IMAGE_JPG = "image/jpeg"
 
     fun getFilePathP(name: String): String {
@@ -90,6 +92,7 @@ object FileUtil {
         return file.absolutePath
     }
 
+    @SuppressLint("NewApi")
     fun saveBitmapQ(bitmap: Bitmap, name: String): String {
         // Create a new image in the user's collection
         val values = ContentValues().apply {
@@ -102,6 +105,8 @@ object FileUtil {
         val resolver = BaseApplication.appContext.contentResolver
         val collection = MediaStore.Images.Media
             .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+//        val collection = MediaStore.Downloads
+//            .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         val item = resolver.insert(collection, values)!!
 
         // Write bitmap into pending image output stream
@@ -116,5 +121,14 @@ object FileUtil {
 
         Log.d(BaseApplication.TAG, "save file uri: $item")
         return item.toString()
+    }
+
+    fun logDocumentFile(file: DocumentFile) {
+        if (file.isDirectory) {
+            file.listFiles().forEach {
+                logDocumentFile(it)
+            }
+        } else
+            Log.d(BaseApplication.TAG, "file name: ${file.name}, uri: ${file.uri}")
     }
 }
